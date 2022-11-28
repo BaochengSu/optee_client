@@ -1,0 +1,33 @@
+# Dockerfile for cross building aarch64
+# 
+# Use below command to build:
+#    docker build -t optee-client-builder:cross-aarch64 -f ./docker/Dockerfile.cross-aarch64 .
+#
+# Use below command to use the image:
+#    docker run -it --rm -u $(id -u):$(id -g) -v ${PWD}:/home/builder/optee_client optee-client-builder:cross-aarch64
+# Then inside the container:
+#    make -j
+#
+FROM debian:bullseye-slim
+
+# Add arm64 arch
+RUN dpkg --add-architecture arm64
+
+# Config OS
+RUN apt-get update && \
+    apt-get install -y locales ca-certificates && \
+    localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
+ENV LANG=en_US.utf8
+
+# Install dep tools
+ENV DEP_PACKAGES='crossbuild-essential-arm64 uuid-dev:arm64 pkg-config'
+RUN apt-get update && \
+    apt-get install --no-install-recommends -y ${DEP_PACKAGES} && \
+    apt-get clean
+
+ENV CROSS_COMPILE=aarch64-linux-gnu-
+
+# Add new user
+RUN useradd --create-home --shell /bin/bash builder
+USER builder
+WORKDIR /home/builder/optee_client
